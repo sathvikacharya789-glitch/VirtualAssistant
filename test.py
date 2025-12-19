@@ -7,17 +7,19 @@ import tkinter as tk
 from tkinter import scrolledtext
 import math
 import winsound
-import os
 import ctypes
 
 # ---------------------- TTS ENGINE --------------------------
 engine = pyttsx3.init()
-engine.setProperty("rate", 165)
+engine.setProperty("rate", 185)
 
 def speak(text):
     console_insert(f"Assistant: {text}\n")
     engine.say(text)
     engine.runAndWait()
+
+def speak_async(text):
+    threading.Thread(target=speak, args=(text,), daemon=True).start()
 
 # ---------------------- BEEP SOUNDS -------------------------
 def beep_start():
@@ -40,14 +42,13 @@ BTN = "#2c2c2c"
 root.configure(bg=BG)
 
 # ---------- TITLE ----------
-title = tk.Label(root, text=" *🎙️ Modern Voice Assistant *",
-                 font=("Segoe UI", 20, "bold"),
-                 bg=CARD, fg=ACCENT, pady=10)
-title.pack(fill="x")
+tk.Label(root, text="🎙️ Modern Voice Assistant",
+         font=("Segoe UI", 20, "bold"),
+         bg=CARD, fg=ACCENT, pady=10).pack(fill="x")
 
 # ---------- STATUS ----------
 status_label = tk.Label(root, text="Status: Idle",
-                        font=("Segoe UI", 12,"bold"),
+                        font=("Segoe UI", 12, "bold"),
                         bg=BG, fg=FG)
 status_label.pack(pady=5)
 
@@ -107,17 +108,16 @@ def volume_mute():
     ctypes.windll.user32.keybd_event(0xAD, 0, 0, 0)
 
 def lock_system():
-    speak("Locking system")
+    speak_async("Locking system")
     ctypes.windll.user32.LockWorkStation()
 
 # ---------------------- SPEECH ------------------------------
 def take_command():
     r = sr.Recognizer()
-    r.pause_threshold = 0.8
     try:
         with sr.Microphone() as source:
-            r.adjust_for_ambient_noise(source, duration=0.1)
-            audio = r.listen(source)
+            r.adjust_for_ambient_noise(source, duration=0.2)
+            audio = r.listen(source, timeout=4, phrase_time_limit=5)
 
         cmd = r.recognize_google(audio, language="en-in").lower()
         console_insert(f"You: {cmd}\n")
@@ -125,47 +125,66 @@ def take_command():
     except:
         return ""
 
+def clean_text(cmd):
+    fillers = [
+        "hey assistant", "assistant", "please",
+        "can you", "tell me", "what is", "current", "now"
+    ]
+    for f in fillers:
+        cmd = cmd.replace(f, "")
+    return cmd.strip()
+
 def process_voice():
-    speak("Assistant ready. Say hey assistant.")
+    speak_async("Assistant ready")
 
     while listening:
-        cmd = take_command()
+        cmd = clean_text(take_command())
 
-        if "hey assistant" not in cmd:
+        if not cmd:
             continue
 
-        speak("Yes?")
-        cmd = take_command()
+        # -------- TIME --------
+        if "time" in cmd or "clock" in cmd:
+            time_now = datetime.datetime.now().strftime("%I:%M %p")
+            speak_async(f"The current time is {time_now}")
 
-        if "time" in cmd:
-            speak(datetime.datetime.now().strftime("The time is %I:%M %p"))
-
-        elif "open youtube" in cmd:
-            speak("Opening YouTube")
+        # -------- YOUTUBE --------
+        elif "youtube" in cmd:
+            speak_async("Opening YouTube")
             webbrowser.open("https://youtube.com")
 
-        elif "increase volume" in cmd:
+        # -------- GOOGLE SEARCH --------
+        elif "search" in cmd:
+            query = cmd.replace("search", "").strip()
+            if query:
+                speak_async(f"Searching Google for {query}")
+                webbrowser.open(
+                    f"https://www.google.com/search?q={query.replace(' ', '+')}"
+                )
+
+        # -------- VOLUME --------
+        elif "increase volume" in cmd or "volume up" in cmd:
             volume_up()
-            speak("Volume increased")
+            speak_async("Volume increased")
 
-        elif "decrease volume" in cmd:
+        elif "decrease volume" in cmd or "volume down" in cmd:
             volume_down()
-            speak("Volume decreased")
+            speak_async("Volume decreased")
 
-        elif "mute volume" in cmd:
+        elif "mute" in cmd:
             volume_mute()
-            speak("Volume muted")
+            speak_async("Volume muted")
 
-        elif "lock system" in cmd:
+        # -------- SYSTEM --------
+        elif "lock" in cmd:
             lock_system()
 
-
-        elif "stop assistant" in cmd:
-            speak("Stopping assistant")
+        elif "stop assistant" in cmd or "stop listening" in cmd:
+            speak_async("Stopping assistant")
             stop_listening()
 
         else:
-            speak("I did not understand")
+            speak_async("I did not understand")
 
 # ---------------------- CONTROLS ----------------------------
 def start_listening():
@@ -196,5 +215,5 @@ tk.Button(btn_frame, text="⏹ Stop",
           bg=BTN, fg=FG, command=stop_listening).grid(row=0, column=1, padx=15)
 
 # ---------------------- RUN -------------------------------
-console_insert("Ready. Say 'Hey Assistant'\n")
+console_insert("Ready. Speak any command\n")
 root.mainloop()

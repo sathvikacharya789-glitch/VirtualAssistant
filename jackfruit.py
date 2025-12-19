@@ -47,7 +47,7 @@ title.pack(fill="x")
 
 # ---------- STATUS ----------
 status_label = tk.Label(root, text="Status: Idle",
-                        font=("Segoe UI", 12,"bold"),
+                        font=("Segoe UI", 12, "bold"),
                         bg=BG, fg=FG)
 status_label.pack(pady=5)
 
@@ -144,6 +144,16 @@ def process_voice():
             speak("Opening YouTube")
             webbrowser.open("https://youtube.com")
 
+        elif "search for" in cmd:
+            search_query = cmd.replace("search for " "").strip()
+            if search_query:
+                speak(f"Searching Google for {search_query}")
+                webbrowser.open(
+                    f"https://www.google.com/search?q={search_query}"
+                )
+            else:
+                speak("What should I search for?")
+
         elif "increase volume" in cmd:
             volume_up()
             speak("Volume increased")
@@ -158,7 +168,6 @@ def process_voice():
 
         elif "lock system" in cmd:
             lock_system()
-
 
         elif "stop assistant" in cmd:
             speak("Stopping assistant")

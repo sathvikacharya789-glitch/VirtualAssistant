@@ -7,8 +7,8 @@ import tkinter as tk
 from tkinter import scrolledtext
 import math
 import winsound
-import os
 import ctypes
+import urllib.parse
 
 # ---------------------- TTS ENGINE --------------------------
 engine = pyttsx3.init()
@@ -40,14 +40,14 @@ BTN = "#2c2c2c"
 root.configure(bg=BG)
 
 # ---------- TITLE ----------
-title = tk.Label(root, text=" *🎙️ Modern Voice Assistant *",
+title = tk.Label(root, text="🎙️ Modern Voice Assistant",
                  font=("Segoe UI", 20, "bold"),
                  bg=CARD, fg=ACCENT, pady=10)
 title.pack(fill="x")
 
 # ---------- STATUS ----------
 status_label = tk.Label(root, text="Status: Idle",
-                        font=("Segoe UI", 12,"bold"),
+                        font=("Segoe UI", 12, "bold"),
                         bg=BG, fg=FG)
 status_label.pack(pady=5)
 
@@ -113,15 +113,20 @@ def lock_system():
 # ---------------------- SPEECH ------------------------------
 def take_command():
     r = sr.Recognizer()
-    r.pause_threshold = 0.8
+    r.pause_threshold = 0.6
+
     try:
         with sr.Microphone() as source:
-            r.adjust_for_ambient_noise(source, duration=0.1)
-            audio = r.listen(source)
+            r.adjust_for_ambient_noise(source, duration=0.05)
+            audio = r.listen(source, timeout=4, phrase_time_limit=5)
 
         cmd = r.recognize_google(audio, language="en-in").lower()
         console_insert(f"You: {cmd}\n")
         return cmd
+
+    except sr.WaitTimeoutError:
+        
+        return ""
     except:
         return ""
 
@@ -142,7 +147,16 @@ def process_voice():
 
         elif "open youtube" in cmd:
             speak("Opening YouTube")
-            webbrowser.open("https://youtube.com")
+            webbrowser.open("https://www.youtube.com")
+
+        elif "search for" in cmd:
+            search_query = cmd.replace("search for", "").strip()
+            if search_query:
+                encoded = urllib.parse.quote(search_query)
+                speak(f"Searching Google for {search_query}")
+                webbrowser.open(f"https://www.google.com/search?q={encoded}")
+            else:
+                speak("What should I search for?")
 
         elif "increase volume" in cmd:
             volume_up()
@@ -158,7 +172,6 @@ def process_voice():
 
         elif "lock system" in cmd:
             lock_system()
-
 
         elif "stop assistant" in cmd:
             speak("Stopping assistant")

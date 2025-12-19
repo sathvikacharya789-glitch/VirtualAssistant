@@ -4,6 +4,7 @@ import speech_recognition as sr
 import pyttsx3
 import threading
 import tkinter as tk
+import os
 from tkinter import scrolledtext
 import math
 
@@ -127,7 +128,7 @@ def take_command():
 
     try:
         with sr.Microphone() as src:
-            r.adjust_for_ambient_noise(src, duration=0.5)
+            r.adjust_for_ambient_noise(src, duration=0.2)
             audio = r.listen(src)
 
         cmd = r.recognize_google(audio, language="en-in").lower()

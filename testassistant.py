@@ -134,7 +134,7 @@ def take_command():
 
     try:
         with sr.Microphone() as source:
-            r.adjust_for_ambient_noise(source, duration=0.4)
+            r.adjust_for_ambient_noise(source, duration=0.2)
             audio = r.listen(source, timeout=5, phrase_time_limit=5)
 
         cmd = r.recognize_google(audio, language="en-in").lower()
